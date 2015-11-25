@@ -29,13 +29,13 @@
 #
 
 %global section		devel
-%global upstreamrel	1200
+%global upstreamrel	1205
 %global upstreamver	9.4-%{upstreamrel}
 
 Summary:	JDBC driver for PostgreSQL
 Name:		postgresql-jdbc
 Version:	9.4.%{upstreamrel}
-Release:	2%{?dist}
+Release:	1%{?dist}
 # ASL 2.0 applies only to postgresql-jdbc.pom file, the rest is BSD
 License:	BSD and ASL 2.0
 Group:		Applications/Databases
@@ -45,11 +45,12 @@ Source0:	http://jdbc.postgresql.org/download/%{name}-%{upstreamver}.src.tar.gz
 # originally http://repo2.maven.org/maven2/postgresql/postgresql/8.4-701.jdbc4/postgresql-8.4-701.jdbc4.pom:
 Source1:	%{name}.pom
 
-# Revert back fix for travis build which breaks our ant-build for version 1.9.2
-# & 1.9.4.
-# ~> downstream
-# ~> 1118667
-Patch0:		postgresql-jdbc-9.3-1102-revert-88b9a034.patch
+# Stripped maven from from ant build
+Patch0:		build.patch
+
+# Erased parts of code where was required sspi
+# sspi is used for authorization but windows only 
+Patch1:         SSPIClient.patch
 
 BuildArch:	noarch
 BuildRequires:	java-devel >= 1:1.8
@@ -76,7 +77,11 @@ This package contains the API Documentation for %{name}.
 
 %prep
 %setup -c -q
+rm -f %{name}-%{upstreamver}.src/org/postgresql/sspi/NTDSAPI.java
+rm -f %{name}-%{upstreamver}.src/org/postgresql/sspi/NTDSAPIWrapper.java
+rm -f %{name}-%{upstreamver}.src/org/postgresql/osgi/*
 mv -f %{name}-%{upstreamver}.src/* .
+rm -f %{name}-%{upstreamver}.src/.gitattributes
 rm -f %{name}-%{upstreamver}.src/.gitignore
 rm -f %{name}-%{upstreamver}.src/.travis.yml
 rmdir %{name}-%{upstreamver}.src
@@ -85,6 +90,7 @@ rmdir %{name}-%{upstreamver}.src
 find -name "*.jar" -or -name "*.class" | xargs rm -f
 
 %patch0 -p1 -b .revert-travis-fix
+%patch1 -p1 
 
 %build
 export OPT_JAR_LIST="ant/ant-junit junit"
@@ -102,7 +108,7 @@ ant jar publicapi
 install -d $RPM_BUILD_ROOT%{_javadir}
 # Per jpp conventions, jars have version-numbered names and we add
 # versionless symlinks.
-install -m 644 jars/postgresql-%{upstreamver}.jdbc41.jar $RPM_BUILD_ROOT%{_javadir}/%{name}.jar
+install -m 644 jars/postgresql-%{upstreamver}.jdbc42.jar $RPM_BUILD_ROOT%{_javadir}/%{name}.jar
 
 
 pushd $RPM_BUILD_ROOT%{_javadir}
@@ -147,6 +153,9 @@ ant test 2>&1 | tee "$test_log" || :
 %doc %{_javadocdir}/%{name}
 
 %changelog
+* Wed Nov 25 2015 Pavel Kajaba <pkajaba@redhat.com> - 9.4.1205-1
+- Stripped osgi and sspi. Rebased to most recent version
+
 * Thu Jun 18 2015 Fedora Release Engineering <rel-eng@lists.fedoraproject.org> - 9.4.1200-2
 - Rebuilt for https://fedoraproject.org/wiki/Fedora_23_Mass_Rebuild
 
