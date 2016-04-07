@@ -138,6 +138,9 @@ ant test 2>&1 | tee "$test_log" || :
 %doc %{_javadocdir}/%{name}
 
 %changelog
+* Thu Apr 07 2016 Pavel Raiskup <praiskup@redhat.com> - 9.4.1208-1
+- bump
+
 * Thu Jun 18 2015 Fedora Release Engineering <rel-eng@lists.fedoraproject.org> - 9.4.1200-2
 - Rebuilt for https://fedoraproject.org/wiki/Fedora_23_Mass_Rebuild
 
