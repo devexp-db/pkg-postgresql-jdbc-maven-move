@@ -29,8 +29,9 @@
 #
 
 %global section		devel
-%global upstreamrel	1205
+%global upstreamrel	1208
 %global upstreamver	9.4-%{upstreamrel}
+%global source_path 	pgjdbc/src/main/java/org/postgresql
 
 Summary:	JDBC driver for PostgreSQL
 Name:		postgresql-jdbc
@@ -41,23 +42,17 @@ License:	BSD and ASL 2.0
 Group:		Applications/Databases
 URL:		http://jdbc.postgresql.org/
 
-Source0:	http://jdbc.postgresql.org/download/%{name}-%{upstreamver}.src.tar.gz
-# originally http://repo2.maven.org/maven2/postgresql/postgresql/8.4-701.jdbc4/postgresql-8.4-701.jdbc4.pom:
-Source1:	%{name}.pom
+Source0:	https://jdbc.postgresql.org/download/postgresql-jdbc-%{upstreamver}.src.tar.gz
 
-# Stripped maven from from ant build
-Patch0:		build.patch
-
-# Erased parts of code where was required sspi
-# sspi is used for authorization but windows only 
-Patch1:         SSPIClient.patch
+Patch1:		0001-Disable-SSPI-under-Linux.patch
 
 BuildArch:	noarch
-BuildRequires:	java-devel >= 1:1.8
+BuildRequires:	java-devel >= 1.8
 BuildRequires:	jpackage-utils
-BuildRequires:	ant
-BuildRequires:	ant-junit
-BuildRequires:	junit
+BuildRequires:	maven-local
+BuildRequires:  java-comment-preprocessor
+BuildRequires:  postgresql-jdbc-parent-poms
+BuildRequires:  properties-maven-plugin
 # gettext is only needed if we try to update translations
 #BuildRequires:	gettext
 Requires:	jpackage-utils
@@ -77,58 +72,47 @@ This package contains the API Documentation for %{name}.
 
 %prep
 %setup -c -q
-rm -f %{name}-%{upstreamver}.src/org/postgresql/sspi/NTDSAPI.java
-rm -f %{name}-%{upstreamver}.src/org/postgresql/sspi/NTDSAPIWrapper.java
-rm -f %{name}-%{upstreamver}.src/org/postgresql/osgi/*
-mv -f %{name}-%{upstreamver}.src/* .
-rm -f %{name}-%{upstreamver}.src/.gitattributes
-rm -f %{name}-%{upstreamver}.src/.gitignore
-rm -f %{name}-%{upstreamver}.src/.travis.yml
-rmdir %{name}-%{upstreamver}.src
+# there are no dependencies for SSPI and OSGi so these files
+# has to be deleted in order to build it
+rm -f postgresql-jdbc-%{upstreamver}.src/%{source_path}/sspi/NTDSAPI.java
+rm -f postgresql-jdbc-%{upstreamver}.src/%{source_path}/sspi/NTDSAPIWrapper.java
+rm -f postgresql-jdbc-%{upstreamver}.src/%{source_path}/sspi/SSPIClient.java
+rm -f postgresql-jdbc-%{upstreamver}.src/%{source_path}/osgi/*
+
+rm -f postgresql-jdbc-%{upstreamver}.src/.gitignore
+rm -f postgresql-jdbc-%{upstreamver}.src/.travis.yml
+# this may not be necessary if release is source from official release
+rm -f postgresql-jdbc-%{upstreamver}.src/.gitattributes
+mv -f postgresql-jdbc-%{upstreamver}.src/* .
+rmdir postgresql-jdbc-%{upstreamver}.src/
 
 # remove any binary libs
 find -name "*.jar" -or -name "*.class" | xargs rm -f
 
-%patch0 -p1 -b .revert-travis-fix
-%patch1 -p1 
+pwd
+%patch1 -p1
+%pom_disable_module ubenchmark
 
 %build
-export OPT_JAR_LIST="ant/ant-junit junit"
-export CLASSPATH=
-
 # Ideally we would run "sh update-translations.sh" here, but that results
 # in inserting the build timestamp into the generated messages_*.class
 # files, which makes rpmdiff complain about multilib conflicts if the
 # different platforms don't build in the same minute.  For now, rely on
 # upstream to have updated the translations files before packaging.
 
-ant jar publicapi
+%mvn_build -f
 
 %install
-install -d $RPM_BUILD_ROOT%{_javadir}
-# Per jpp conventions, jars have version-numbered names and we add
-# versionless symlinks.
-install -m 644 jars/postgresql-%{upstreamver}.jdbc42.jar $RPM_BUILD_ROOT%{_javadir}/%{name}.jar
-
+%mvn_install
 
 pushd $RPM_BUILD_ROOT%{_javadir}
 # Also, for backwards compatibility with our old postgresql-jdbc packages,
 # add these symlinks.  (Probably only the jdbc3 symlink really makes sense?)
-ln -s postgresql-jdbc.jar postgresql-jdbc2.jar
-ln -s postgresql-jdbc.jar postgresql-jdbc2ee.jar
-ln -s postgresql-jdbc.jar postgresql-jdbc3.jar
+ln -s %{name}/postgresql.jar postgresql-jdbc.jar
+ln -s %{name}/postgresql.jar postgresql-jdbc2.jar
+ln -s %{name}/postgresql.jar postgresql-jdbc2ee.jar
+ln -s %{name}/postgresql.jar postgresql-jdbc3.jar
 popd
-
-# Install the pom after inserting the correct version number
-sed 's/UPSTREAM_VERSION/%{upstreamver}/g' %{SOURCE1} >JPP-%{name}.pom
-install -d -m 755 $RPM_BUILD_ROOT%{_mavenpomdir}/
-install -m 644 JPP-%{name}.pom $RPM_BUILD_ROOT%{_mavenpomdir}/JPP-%{name}.pom
-%add_maven_depmap
-
-install -d -m 755 $RPM_BUILD_ROOT%{_javadocdir}
-cp -ra build/publicapi $RPM_BUILD_ROOT%{_javadocdir}/%{name}
-install -d build/publicapi docs/%{name}
-
 
 %check
 %if 0%{?runselftest}
@@ -141,21 +125,19 @@ ant test 2>&1 | tee "$test_log" || :
 
 %endif
 
-
 %files -f .mfiles
-%doc LICENSE README.md doc/*
+%license LICENSE
+%doc README.md 
+%{_javadir}/%{name}.jar
 %{_javadir}/%{name}2.jar
 %{_javadir}/%{name}2ee.jar
 %{_javadir}/%{name}3.jar
 
 %files javadoc
-%doc LICENSE
+%license LICENSE
 %doc %{_javadocdir}/%{name}
 
 %changelog
-* Wed Nov 25 2015 Pavel Kajaba <pkajaba@redhat.com> - 9.4.1205-1
-- Stripped osgi and sspi. Rebased to most recent version
-
 * Thu Jun 18 2015 Fedora Release Engineering <rel-eng@lists.fedoraproject.org> - 9.4.1200-2
 - Rebuilt for https://fedoraproject.org/wiki/Fedora_23_Mass_Rebuild
 
