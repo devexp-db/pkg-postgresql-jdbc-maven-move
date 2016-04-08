@@ -36,13 +36,14 @@
 Summary:	JDBC driver for PostgreSQL
 Name:		postgresql-jdbc
 Version:	9.4.%{upstreamrel}
-Release:	4%{?dist}
+Release:	5%{?dist}
 # ASL 2.0 applies only to postgresql-jdbc.pom file, the rest is BSD
 License:	BSD and ASL 2.0
 Group:		Applications/Databases
 URL:		http://jdbc.postgresql.org/
 
 Source0:	https://jdbc.postgresql.org/download/postgresql-jdbc-%{upstreamver}.src.tar.gz
+Source1:	postgres-testing.sh
 
 Patch1:		0001-Disable-SSPI-under-Linux.patch
 Patch2:		pom-options.patch
@@ -54,6 +55,8 @@ BuildRequires:	maven-local
 BuildRequires:  java-comment-preprocessor
 BuildRequires:  postgresql-jdbc-parent-poms
 BuildRequires:  properties-maven-plugin
+BuildRequires:	postgresql-server
+
 # gettext is only needed if we try to update translations
 #BuildRequires:	gettext
 Requires:	jpackage-utils
@@ -84,9 +87,11 @@ rmdir postgresql-jdbc-%{upstreamver}.src/
 find -name "*.jar" -or -name "*.class" | xargs rm -f
 
 pwd
+
+%pom_disable_module ubenchmark
+
 %patch1 -p1
 %patch2 -p1
-%pom_disable_module ubenchmark
 
 mkdir -p pgjdbc/target/generated-sources/annotations
 
@@ -97,7 +102,27 @@ mkdir -p pgjdbc/target/generated-sources/annotations
 # different platforms don't build in the same minute.  For now, rely on
 # upstream to have updated the translations files before packaging.
 
-%mvn_build -f -- -DwaffleEnabled=false -DosgiEnabled=false
+# Include PostgreSQL testing methods and variables.
+. %{SOURCE1}
+
+cat <<EOF > build.local.properties
+server=localhost
+port=$PGTESTS_PORT
+database=test
+username=test
+password=test
+privilegedUser=$PGTESTS_ADMIN
+privilegedPassword=$PGTESTS_ADMINPASS
+preparethreshold=5
+loglevel=0
+protocolVersion=0
+EOF
+
+# Start the local PG cluster.
+pgtests_start
+
+%mvn_build -- -DwaffleEnabled=false -DosgiEnabled=false
+
 
 %install
 %mvn_install
@@ -112,15 +137,6 @@ ln -s %{name}/postgresql.jar postgresql-jdbc3.jar
 popd
 
 %check
-%if 0%{?runselftest}
-# Note that this requires to have PostgreSQL properly configured;  for this
-# reason the testsuite is turned off by default (see org/postgresql/test/README)
-test_log=test.log
-# TODO: more reliable testing
-ant test 2>&1 | tee "$test_log" || :
-( test -f "$test_log" && ! grep FAILED "$test_log" )
-
-%endif
 
 %files -f .mfiles
 %license LICENSE
@@ -135,6 +151,9 @@ ant test 2>&1 | tee "$test_log" || :
 %doc %{_javadocdir}/%{name}
 
 %changelog
+* Fri Apr 08 2016 Pavel Raiskup <praiskup@redhat.com> - 9.4.1208-5
+- enable testsuite for each build, to-be-fixed-yet
+
 * Fri Apr 08 2016 Pavel Raiskup <praiskup@redhat.com> - 9.4.1208-4
 - apply the work-around for maven-compiler-plugin && jcp issue
 

@@ -1,8 +1,8 @@
 diff --git a/pgjdbc/pom.xml b/pgjdbc/pom.xml
-index 67aa27f..017830a 100644
+index 67aa27f..dab5308 100644
 --- a/pgjdbc/pom.xml
 +++ b/pgjdbc/pom.xml
-@@ -113,6 +113,67 @@
+@@ -113,6 +113,71 @@
          </plugins>
        </build>
      </profile>
@@ -50,6 +50,10 @@ index 67aa27f..017830a 100644
 +                <exclude>org/postgresql/osgi/PGBundleActivator.java</exclude>
 +                <exclude>org/postgresql/osgi/PGDataSourceFactory.java</exclude>
 +              </excludes>
++              <testExcludes combine.children="append">
++                <exclude>**/PGDataSourceFactoryTest.java</exclude>
++                <exclude>**/OsgiTestSuite.java</exclude>
++              </testExcludes>
 +            </configuration>
 +          </plugin>
 +          <plugin>
