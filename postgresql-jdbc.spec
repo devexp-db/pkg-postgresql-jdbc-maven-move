@@ -36,7 +36,7 @@
 Summary:	JDBC driver for PostgreSQL
 Name:		postgresql-jdbc
 Version:	9.4.%{upstreamrel}
-Release:	1%{?dist}
+Release:	2%{?dist}
 # ASL 2.0 applies only to postgresql-jdbc.pom file, the rest is BSD
 License:	BSD and ASL 2.0
 Group:		Applications/Databases
@@ -45,6 +45,7 @@ URL:		http://jdbc.postgresql.org/
 Source0:	https://jdbc.postgresql.org/download/postgresql-jdbc-%{upstreamver}.src.tar.gz
 
 Patch1:		0001-Disable-SSPI-under-Linux.patch
+Patch2:		pom-options.patch
 
 BuildArch:	noarch
 BuildRequires:	java-devel >= 1.8
@@ -72,13 +73,6 @@ This package contains the API Documentation for %{name}.
 
 %prep
 %setup -c -q
-# there are no dependencies for SSPI and OSGi so these files
-# has to be deleted in order to build it
-rm -f postgresql-jdbc-%{upstreamver}.src/%{source_path}/sspi/NTDSAPI.java
-rm -f postgresql-jdbc-%{upstreamver}.src/%{source_path}/sspi/NTDSAPIWrapper.java
-rm -f postgresql-jdbc-%{upstreamver}.src/%{source_path}/sspi/SSPIClient.java
-rm -f postgresql-jdbc-%{upstreamver}.src/%{source_path}/osgi/*
-
 rm -f postgresql-jdbc-%{upstreamver}.src/.gitignore
 rm -f postgresql-jdbc-%{upstreamver}.src/.travis.yml
 # this may not be necessary if release is source from official release
@@ -91,6 +85,7 @@ find -name "*.jar" -or -name "*.class" | xargs rm -f
 
 pwd
 %patch1 -p1
+%patch2 -p1
 %pom_disable_module ubenchmark
 
 %build
@@ -100,7 +95,7 @@ pwd
 # different platforms don't build in the same minute.  For now, rely on
 # upstream to have updated the translations files before packaging.
 
-%mvn_build -f
+%mvn_build -f -- -DwaffleEnabled=false -DosgiEnabled=false
 
 %install
 %mvn_install
@@ -138,7 +133,7 @@ ant test 2>&1 | tee "$test_log" || :
 %doc %{_javadocdir}/%{name}
 
 %changelog
-* Thu Apr 07 2016 Pavel Raiskup <praiskup@redhat.com> - 9.4.1208-1
+* Fri Apr 08 2016 Pavel Raiskup <praiskup@redhat.com> - 9.4.1208-2
 - bump
 
 * Thu Jun 18 2015 Fedora Release Engineering <rel-eng@lists.fedoraproject.org> - 9.4.1200-2
