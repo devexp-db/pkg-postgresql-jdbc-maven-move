@@ -36,7 +36,7 @@
 Summary:	JDBC driver for PostgreSQL
 Name:		postgresql-jdbc
 Version:	9.4.%{upstreamrel}
-Release:	2%{?dist}
+Release:	3%{?dist}
 # ASL 2.0 applies only to postgresql-jdbc.pom file, the rest is BSD
 License:	BSD and ASL 2.0
 Group:		Applications/Databases
@@ -133,7 +133,7 @@ ant test 2>&1 | tee "$test_log" || :
 %doc %{_javadocdir}/%{name}
 
 %changelog
-* Fri Apr 08 2016 Pavel Raiskup <praiskup@redhat.com> - 9.4.1208-2
+* Fri Apr 08 2016 Pavel Raiskup <praiskup@redhat.com> - 9.4.1208-3
 - bump
 
 * Thu Jun 18 2015 Fedora Release Engineering <rel-eng@lists.fedoraproject.org> - 9.4.1200-2
