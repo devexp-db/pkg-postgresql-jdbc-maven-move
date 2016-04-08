@@ -36,7 +36,7 @@
 Summary:	JDBC driver for PostgreSQL
 Name:		postgresql-jdbc
 Version:	9.4.%{upstreamrel}
-Release:	3%{?dist}
+Release:	4%{?dist}
 # ASL 2.0 applies only to postgresql-jdbc.pom file, the rest is BSD
 License:	BSD and ASL 2.0
 Group:		Applications/Databases
@@ -88,6 +88,8 @@ pwd
 %patch2 -p1
 %pom_disable_module ubenchmark
 
+mkdir -p pgjdbc/target/generated-sources/annotations
+
 %build
 # Ideally we would run "sh update-translations.sh" here, but that results
 # in inserting the build timestamp into the generated messages_*.class
@@ -133,6 +135,9 @@ ant test 2>&1 | tee "$test_log" || :
 %doc %{_javadocdir}/%{name}
 
 %changelog
+* Fri Apr 08 2016 Pavel Raiskup <praiskup@redhat.com> - 9.4.1208-4
+- apply the work-around for maven-compiler-plugin && jcp issue
+
 * Fri Apr 08 2016 Pavel Raiskup <praiskup@redhat.com> - 9.4.1208-3
 - bump
 
