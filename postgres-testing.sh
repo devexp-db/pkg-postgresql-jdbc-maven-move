@@ -9,7 +9,6 @@
 : ${PGTESTS_ADMINDB=$PGTESTS_ADMIN}
 : ${PGTESTS_ADMINPASS=$PGTESTS_ADMIN}
 : ${PGTESTS_PORT=54321}
-: ${PGTESTS_LOCALE=en_US.utf8}
 : ${PGTESTS_SOCKETDIR=/tmp}
 : ${PGTESTS_USERS=test:test}
 : ${PGTESTS_DATABASES=test:test}
@@ -45,8 +44,9 @@ trap __trap_cb EXIT
 
 __pgtests_initdb ()
 {
-    LC_ALL=$PGTESTS_LOCALE initdb "$PGTESTS_DATADIR" -U "$PGTESTS_ADMIN" \
-        --auth-local=peer --auth-host=md5
+    initdb "$PGTESTS_DATADIR" -U "$PGTESTS_ADMIN" \
+        --auth-local=peer --auth-host=md5 \
+        ${PGTESTS_LOCALE+--locale="$PGTESTS_LOCALE"}
 }
 
 
