@@ -56,6 +56,7 @@ BuildRequires:  java-comment-preprocessor
 BuildRequires:  postgresql-jdbc-parent-poms
 BuildRequires:  properties-maven-plugin
 BuildRequires:	postgresql-server
+BuildRequires:	postgresql-contrib
 
 # gettext is only needed if we try to update translations
 #BuildRequires:	gettext
