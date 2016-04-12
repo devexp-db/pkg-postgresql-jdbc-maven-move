@@ -106,6 +106,8 @@ mkdir -p pgjdbc/target/generated-sources/annotations
 # Include PostgreSQL testing methods and variables.
 . %{SOURCE1}
 
+PGTESTS_LOCALE=C.UTF-8
+
 cat <<EOF > build.local.properties
 server=localhost
 port=$PGTESTS_PORT
