@@ -1,5 +1,5 @@
 diff --git a/pgjdbc/src/main/java/org/postgresql/core/v3/ConnectionFactoryImpl.java b/pgjdbc/src/main/java/org/postgresql/core/v3/ConnectionFactoryImpl.java
-index fec5bb0..f6d81d5 100644
+index fec5bb0..c8ddc37 100644
 --- a/pgjdbc/src/main/java/org/postgresql/core/v3/ConnectionFactoryImpl.java
 +++ b/pgjdbc/src/main/java/org/postgresql/core/v3/ConnectionFactoryImpl.java
 @@ -24,7 +24,7 @@ import org.postgresql.hostchooser.HostChooser;
@@ -11,7 +11,7 @@ index fec5bb0..f6d81d5 100644
  import org.postgresql.util.GT;
  import org.postgresql.util.HostSpec;
  import org.postgresql.util.MD5Digest;
-@@ -68,6 +68,38 @@ public class ConnectionFactoryImpl extends ConnectionFactory {
+@@ -68,6 +68,28 @@ public class ConnectionFactoryImpl extends ConnectionFactory {
    private static class UnsupportedProtocolException extends IOException {
    }
  
@@ -28,21 +28,11 @@ index fec5bb0..f6d81d5 100644
 +    cArg[3] = Logger.class;
 +
 +    Class c = null;
-+    String osName = System.getProperty("os.name");
-+    if (osName.startsWith("Linux")) {
-+      try {
-+        c = Class.forName("org.postgresql.sspi.ISSPIClient");
-+        return (ISSPIClient) c.getDeclaredConstructor().newInstance();
-+      } catch (Throwable e) {
-+        logger.info("Unable to find SSPI class for Linux", e);
-+      }
-+    } else {
-+        try {
-+          c = Class.forName("org.postgresql.sspi.SSPIClient");
-+          return (ISSPIClient) c.getDeclaredConstructor(cArg).newInstance(pgStream, spnServiceClass, enableNegotiate, logger);
-+      } catch (Throwable e) {
-+        logger.info("Unable to find SSPI class for Linux", e); 
-+      }
++    try {
++        c = Class.forName("org.postgresql.sspi.SSPIClient");
++        return (ISSPIClient) c.getDeclaredConstructor(cArg).newInstance(pgStream, spnServiceClass, enableNegotiate, logger);
++    } catch (Throwable e) {
++        logger.info("Unable to find SSPI class", e); 
 +    }
 +    return null;
 +  }
@@ -50,7 +40,7 @@ index fec5bb0..f6d81d5 100644
    public ProtocolConnection openConnectionImpl(HostSpec[] hostSpecs, String user, String database,
        Properties info, Logger logger) throws SQLException {
      // Extract interesting values from the info properties:
-@@ -404,7 +436,7 @@ public class ConnectionFactoryImpl extends ConnectionFactory {
+@@ -404,7 +426,7 @@ public class ConnectionFactoryImpl extends ConnectionFactory {
      String password = PGProperty.PASSWORD.get(info);
  
      /* SSPI negotiation state, if used */
@@ -59,7 +49,7 @@ index fec5bb0..f6d81d5 100644
  
      try {
        authloop: while (true) {
-@@ -563,7 +595,7 @@ public class ConnectionFactoryImpl extends ConnectionFactory {
+@@ -563,7 +585,7 @@ public class ConnectionFactoryImpl extends ConnectionFactory {
                        "Using JSSE GSSAPI, gssapi requested by server and gsslib=sspi not forced");
                  } else {
                    /* Determine if SSPI is supported by the client */
@@ -70,10 +60,10 @@ index fec5bb0..f6d81d5 100644
  
 diff --git a/pgjdbc/src/main/java/org/postgresql/sspi/ISSPIClient.java b/pgjdbc/src/main/java/org/postgresql/sspi/ISSPIClient.java
 new file mode 100644
-index 0000000..27add44
+index 0000000..ec79d42
 --- /dev/null
 +++ b/pgjdbc/src/main/java/org/postgresql/sspi/ISSPIClient.java
-@@ -0,0 +1,37 @@
+@@ -0,0 +1,40 @@
 +package org.postgresql.sspi;
 +
 +import java.io.IOException;
@@ -92,22 +82,25 @@ index 0000000..27add44
 + * SSPI is not supported on a non-Windows client.
 + * 
 + * 
-+ * @author craig
++ * @author pkajaba
 + *
 + */
 +public class ISSPIClient {
 +
 +	public boolean isSSPISupported() {
-+		return false;
++		throw new UnsupportedOperationException("Not supported.");
 +	}
 +	
 +	public void startSSPI() throws SQLException, IOException {
++		throw new UnsupportedOperationException("Not supported.");
 +	}
 +	
 +	public void continueSSPI(int msgLength) throws SQLException, IOException {
++		throw new UnsupportedOperationException("Not supported.");
 +	}
 +	
 +	public void dispose() {
++		throw new UnsupportedOperationException("Not supported.");
 +	}
 +
 +}
