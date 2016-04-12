@@ -36,7 +36,7 @@
 Summary:	JDBC driver for PostgreSQL
 Name:		postgresql-jdbc
 Version:	9.4.%{upstreamrel}
-Release:	5%{?dist}
+Release:	6%{?dist}
 # ASL 2.0 applies only to postgresql-jdbc.pom file, the rest is BSD
 License:	BSD and ASL 2.0
 Group:		Applications/Databases
@@ -152,6 +152,9 @@ popd
 %doc %{_javadocdir}/%{name}
 
 %changelog
+* Tue Apr 12 2016 Pavel Kajaba <pkajaba@redhat.com> - 9.4.1208-6
+- Added script to enable testing
+
 * Fri Apr 08 2016 Pavel Raiskup <praiskup@redhat.com> - 9.4.1208-5
 - enable testsuite for each build, to-be-fixed-yet
 
