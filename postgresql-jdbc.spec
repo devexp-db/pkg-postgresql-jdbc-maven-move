@@ -61,8 +61,8 @@ BuildArch:	noarch
 BuildRequires:	java-devel >= 1.8
 BuildRequires:	jpackage-utils
 BuildRequires:	maven-local
-BuildRequires:  java-comment-preprocessor
-BuildRequires:  properties-maven-plugin
+BuildRequires:	java-comment-preprocessor
+BuildRequires:	properties-maven-plugin
 BuildRequires:	postgresql-server
 BuildRequires:	postgresql-contrib
 
@@ -86,8 +86,8 @@ build.
 
 
 %package javadoc
-Summary:        API docs for %{name}
-Group:          Documentation
+Summary:	API docs for %{name}
+Group:		Documentation
 
 %description javadoc
 This package contains the API Documentation for %{name}.
@@ -104,8 +104,6 @@ rmdir postgresql-jdbc-%{upstreamver}.src/
 
 # remove any binary libs
 find -name "*.jar" -or -name "*.class" | xargs rm -f
-
-pwd
 
 %pom_disable_module ubenchmark
 
@@ -126,6 +124,7 @@ pwd
 # misunderstanding between maven, maven-compiler-plugin and
 # java-comment-preprocessor?  Not solved yet.  See rhbz#1325060.
 mkdir -p pgjdbc/target/generated-sources/annotations
+
 
 %build
 # Ideally we would run "sh update-translations.sh" here, but that results
@@ -168,6 +167,7 @@ do
 	mv $i ${i%%%%.hack-parent-poms}
 done
 
+
 %install
 %mvn_install
 cd %parent_poms_builddir
@@ -182,7 +182,9 @@ ln -s %{name}/postgresql.jar postgresql-jdbc2ee.jar
 ln -s %{name}/postgresql.jar postgresql-jdbc3.jar
 popd
 
+
 %check
+
 
 %files -f .mfiles
 %license LICENSE
