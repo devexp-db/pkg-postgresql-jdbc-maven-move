@@ -31,12 +31,14 @@
 %global section		devel
 %global upstreamrel	1208
 %global upstreamver	9.4-%{upstreamrel}
-%global source_path 	pgjdbc/src/main/java/org/postgresql
+%global source_path	pgjdbc/src/main/java/org/postgresql
+%global parent_ver	1.0.5
+%global parent_poms_builddir	./pgjdbc-parent-poms-REL%parent_ver
 
 Summary:	JDBC driver for PostgreSQL
 Name:		postgresql-jdbc
 Version:	9.4.%{upstreamrel}
-Release:	7%{?dist}
+Release:	8%{?dist}
 # ASL 2.0 applies only to postgresql-jdbc.pom file, the rest is BSD
 License:	BSD and ASL 2.0
 Group:		Applications/Databases
@@ -45,15 +47,21 @@ URL:		http://jdbc.postgresql.org/
 Source0:	https://jdbc.postgresql.org/download/postgresql-jdbc-%{upstreamver}.src.tar.gz
 Source1:	postgres-testing.sh
 
+# Upstream moved parent pom.xml into separate project (even though there is only
+# one dependant project on it?).  Let's try to not complicate packaging by
+# having separate spec file for it, too.
+Source2:	https://github.com/pgjdbc/pgjdbc-parent-poms/archive/REL%parent_ver.tar.gz
+
 Patch1:		0001-Disable-SSPI-under-Linux.patch
 Patch2:		pom-options.patch
+Patch3:		parent-poms-options.patch
+Patch4:		hack-parents.patch
 
 BuildArch:	noarch
 BuildRequires:	java-devel >= 1.8
 BuildRequires:	jpackage-utils
 BuildRequires:	maven-local
 BuildRequires:  java-comment-preprocessor
-BuildRequires:  postgresql-jdbc-parent-poms
 BuildRequires:  properties-maven-plugin
 BuildRequires:	postgresql-server
 BuildRequires:	postgresql-contrib
@@ -68,6 +76,15 @@ PostgreSQL is an advanced Object-Relational database management
 system. The postgresql-jdbc package includes the .jar files needed for
 Java programs to access a PostgreSQL database.
 
+
+%package	parent-poms
+Summary:	Build dependency management for pgjdbc.
+
+%description parent-poms
+Pom files bringing dependencies required for successful PostgreSQL JDBC driver
+build.
+
+
 %package javadoc
 Summary:        API docs for %{name}
 Group:          Documentation
@@ -75,8 +92,9 @@ Group:          Documentation
 %description javadoc
 This package contains the API Documentation for %{name}.
 
+
 %prep
-%setup -c -q
+%setup -c -q -a 2
 rm -f postgresql-jdbc-%{upstreamver}.src/.gitignore
 rm -f postgresql-jdbc-%{upstreamver}.src/.travis.yml
 # this may not be necessary if release is source from official release
@@ -91,9 +109,22 @@ pwd
 
 %pom_disable_module ubenchmark
 
+# Those two patches are proposed:
+# https://github.com/pgjdbc/pgjdbc/pull/546
 %patch1 -p1
 %patch2 -p1
 
+# Proposed: https://github.com/pgjdbc/pgjdbc-parent-poms/pull/4
+%patch3 -d %parent_poms_builddir -p1
+
+# Hack #0!  For upstream it is to some extent important to have the parent-poms
+# project separated.  Having it like that on downstream level does not help at
+# all.  Note that we have to revert this patch before we do the installation.
+%patch4 -p1 -b.hack-parent-poms
+
+# Hack #1!  This directory is missing for some reason, it is most probably some
+# misunderstanding between maven, maven-compiler-plugin and
+# java-comment-preprocessor?  Not solved yet.  See rhbz#1325060.
 mkdir -p pgjdbc/target/generated-sources/annotations
 
 %build
@@ -124,10 +155,22 @@ EOF
 # Start the local PG cluster.
 pgtests_start
 
+# First "build" the parent-poms ..
+cd %parent_poms_builddir
+%mvn_build -- -DwaffleEnabled=false -DosgiEnabled=false
+cd ..
+# .. and then build pgjdbc.
 %mvn_build -- -DwaffleEnabled=false -DosgiEnabled=false
 
+# Hack #0!  Revert the patch above.
+for i in `find -name '*.hack-parent-poms'`
+do
+	mv $i ${i%%%%.hack-parent-poms}
+done
 
 %install
+%mvn_install
+cd %parent_poms_builddir
 %mvn_install
 
 pushd $RPM_BUILD_ROOT%{_javadir}
@@ -143,17 +186,24 @@ popd
 
 %files -f .mfiles
 %license LICENSE
-%doc README.md 
+%doc README.md
 %{_javadir}/%{name}.jar
 %{_javadir}/%{name}2.jar
 %{_javadir}/%{name}2ee.jar
 %{_javadir}/%{name}3.jar
 
+%files parent-poms -f %parent_poms_builddir/.mfiles
+
 %files javadoc
 %license LICENSE
 %doc %{_javadocdir}/%{name}
 
+
 %changelog
+* Wed Apr 13 2016 Pavel Raiskup <praiskup@redhat.com> - 9.4.1208-8
+- merge parent-poms and pgjdbc downstream (having separate package does not seem
+  to be necessary at all)
+
 * Tue Apr 12 2016 Pavel Raiskup <praiskup@redhat.com> - 9.4.1208-7
 - fix testsuite for fedora 24
 
