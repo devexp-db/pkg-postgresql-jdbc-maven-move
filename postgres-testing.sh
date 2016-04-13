@@ -4,7 +4,7 @@
 
 # This file is to be sourced.
 
-: ${PGTESTS_DATADIR=datadir}
+: ${PGTESTS_DATADIR=`pwd`/datadir}
 : ${PGTESTS_ADMIN=`id -u -n`}
 : ${PGTESTS_ADMINDB=$PGTESTS_ADMIN}
 : ${PGTESTS_ADMINPASS=$PGTESTS_ADMIN}
