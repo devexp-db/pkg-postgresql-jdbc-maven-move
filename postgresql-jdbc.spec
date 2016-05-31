@@ -65,6 +65,7 @@ Patch1:		0001-Disable-SSPI-under-Linux.patch
 Patch2:		pom-options.patch
 Patch3:		parent-poms-options.patch
 Patch4:		hack-parents.patch
+Patch5:		fix-javadoc.patch
 
 BuildArch:	noarch
 BuildRequires:	java-devel >= 1.8
