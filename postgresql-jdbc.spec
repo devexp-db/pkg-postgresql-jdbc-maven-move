@@ -26,7 +26,13 @@
 # THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-#
+
+
+# Configuration for rpmbuild, might be specified by options
+# like e.g. 'rpmbuild --define "runselftest 0"'.
+
+%{!?runselftest:%global runselftest 1}
+
 
 %global section		devel
 %global upstreamrel	1208
@@ -34,6 +40,9 @@
 %global source_path	pgjdbc/src/main/java/org/postgresql
 %global parent_ver	1.0.5
 %global parent_poms_builddir	./pgjdbc-parent-poms-REL%parent_ver
+
+%global pgjdbc_mvn_options -DwaffleEnabled=false -DosgiEnabled=false \\\
+    -DexcludePackageNames=org.postgresql.osgi:org.postgresql.sspi
 
 Summary:	JDBC driver for PostgreSQL
 Name:		postgresql-jdbc
@@ -63,8 +72,11 @@ BuildRequires:	jpackage-utils
 BuildRequires:	maven-local
 BuildRequires:	java-comment-preprocessor
 BuildRequires:	properties-maven-plugin
+
+%if %runselftest
 BuildRequires:	postgresql-server
 BuildRequires:	postgresql-contrib
+%endif
 
 # gettext is only needed if we try to update translations
 #BuildRequires:	gettext
@@ -134,6 +146,7 @@ mkdir -p pgjdbc/target/generated-sources/annotations
 # upstream to have updated the translations files before packaging.
 
 # Include PostgreSQL testing methods and variables.
+%if %runselftest
 . %{SOURCE1}
 
 PGTESTS_LOCALE=C.UTF-8
@@ -153,13 +166,19 @@ EOF
 
 # Start the local PG cluster.
 pgtests_start
+%endif
 
 # First "build" the parent-poms ..
 cd %parent_poms_builddir
-%mvn_build -- -DwaffleEnabled=false -DosgiEnabled=false
+%mvn_build -- %pgjdbc_mvn_options
 cd ..
 # .. and then build pgjdbc.
-%mvn_build -- -DwaffleEnabled=false -DosgiEnabled=false
+
+%if %runselftest
+%mvn_build -- %pgjdbc_mvn_options
+%else
+%mvn_build -- %pgjdbc_mvn_options -Dmaven.test.skip=true
+%endif
 
 # Hack #0!  Revert the patch above.
 for i in `find -name '*.hack-parent-poms'`
